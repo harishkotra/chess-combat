@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+@theme {
+  --color-chess-dark: #262421;
+  --color-chess-light: #f0d9b5;
+  --color-chess-brown: #b58863;
+
+  --font-display: "Inter", system-ui, sans-serif;
+}
+
+:root {
+  font-family: var(--font-display);
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: dark;
+  background-color: #09090b;
+  /* Zinc 950 */
+  color: #e4e4e7;
+  /* Zinc 200 */
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  @apply bg-zinc-950 text-zinc-200;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #3f3f46;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #52525b;
+}
+
+.mono-panel {
+  @apply bg-zinc-900 border border-zinc-800 rounded-lg shadow-sm;
+}
+
+.mono-input {
+  @apply bg-zinc-950 border border-zinc-800 text-white rounded-md focus:ring-1 focus:ring-zinc-600 focus:border-zinc-600 outline-none transition-all;
+}
+
+.btn-mono {
+  @apply bg-zinc-100 hover:bg-white text-zinc-900 font-bold shadow-sm transition-all active:scale-[0.98];
+}
+
+.btn-mono-danger {
+  @apply bg-zinc-800 hover:bg-zinc-700 text-white font-bold border border-zinc-700 shadow-sm transition-all active:scale-[0.98];
+}
