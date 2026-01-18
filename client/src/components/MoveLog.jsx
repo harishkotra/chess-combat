@@ -1,10 +1,12 @@
 import { useEffect, useRef } from "react";
 
 export default function MoveLog({ logs }) {
-    const bottomRef = useRef(null);
+    const containerRef = useRef(null);
 
     useEffect(() => {
-        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+        if (containerRef.current) {
+            containerRef.current.scrollTop = 0;
+        }
     }, [logs]);
 
     return (
@@ -16,7 +18,7 @@ export default function MoveLog({ logs }) {
                 System Log
             </h3>
 
-            <div className="flex-1 overflow-y-auto space-y-1 custom-scrollbar pr-2 font-mono text-[10px]">
+            <div ref={containerRef} className="flex-1 overflow-y-auto space-y-1 custom-scrollbar pr-2 font-mono text-[10px]">
                 {logs.length === 0 ? (
                     <div className="text-zinc-700 italic px-2">Ready...</div>
                 ) : (
@@ -25,8 +27,8 @@ export default function MoveLog({ logs }) {
                             <div className="flex items-center gap-2">
                                 <span className="text-zinc-600">{log.timestamp}</span>
                                 <span className={`uppercase font-bold ${log.type === 'move' ? 'text-zinc-200' :
-                                        log.type === 'error' ? 'text-red-400' :
-                                            'text-zinc-500'
+                                    log.type === 'error' ? 'text-red-400' :
+                                        'text-zinc-500'
                                     }`}>
                                     {log.type}
                                 </span>
@@ -34,7 +36,15 @@ export default function MoveLog({ logs }) {
                                     {log.message}
                                 </span>
                             </div>
-                            {log.details && log.details.raw && (
+                            {/* Display Reasoning/Thoughts if available */}
+                            {log.details && log.details.thought && (
+                                <div className="mt-1 ml-14 text-zinc-500 italic whitespace-pre-wrap leading-relaxed border-l-2 border-zinc-700 pl-2">
+                                    "{log.details.thought}"
+                                </div>
+                            )}
+
+                            {/* Raw output debug (can hide if thought is present to reduce clutter, or keep small) */}
+                            {log.details && log.details.raw && !log.details.thought && (
                                 <div className="mt-0.5 ml-14 text-zinc-600 truncate max-w-lg">
                                     RAW: "{log.details.raw}"
                                 </div>
@@ -42,7 +52,6 @@ export default function MoveLog({ logs }) {
                         </div>
                     ))
                 )}
-                <div ref={bottomRef} />
             </div>
         </div>
     );

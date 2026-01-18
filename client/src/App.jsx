@@ -56,7 +56,7 @@ function App() {
               <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
                 Ollama Chess Arena
               </h1>
-              <p className="text-zinc-500 text-xs font-mono uppercase tracking-wider">Local LLM Eval // Daily Build</p>
+              <p className="text-zinc-500 text-xs font-mono uppercase tracking-wider">Local LLM Eval</p>
             </div>
           </div>
 
@@ -77,6 +77,8 @@ function App() {
                   fen={gameState.fen}
                   lastMove={gameState.lastMove}
                   turn={gameState.turn}
+                  whiteModel={gameState.whiteModel}
+                  blackModel={gameState.blackModel}
                 />
               </div>
               <MoveLog logs={gameState.logs || []} />

@@ -51,8 +51,8 @@ export default function StatsPanel({ stats }) {
                                         {g.black}
                                     </td>
                                     <td className="px-2 py-2 text-right">
-                                        <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-bold border ${g.result.includes("White") ? "bg-zinc-100 text-black border-zinc-200" : g.result.includes("Black") ? "bg-black text-white border-zinc-700" : "bg-zinc-800 text-zinc-400 border-zinc-700"}`}>
-                                            {g.result === 'Draw' ? 'DRAW' : g.result.includes("White") ? 'W' : 'B'}
+                                        <span className={`inline-block w-8 text-center py-0.5 rounded text-[9px] font-bold border ${g.result.includes("White") ? "bg-zinc-100 text-black border-zinc-200" : g.result.includes("Black") ? "bg-black text-white border-zinc-700" : "bg-zinc-800 text-zinc-400 border-zinc-700"}`}>
+                                            {g.result.includes('Draw') ? 'D' : g.result.includes("White") ? 'W' : 'B'}
                                         </span>
                                     </td>
                                 </tr>

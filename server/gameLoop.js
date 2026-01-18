@@ -38,7 +38,9 @@ class GameLoop {
             stats: this.gameStats,
             turn: this.chess.turn() === 'w' ? 'White' : 'Black',
             lastMove: this.chess.history({ verbose: true }).pop(),
-            logs: this.logs
+            logs: this.logs,
+            whiteModel: this.config.whiteModel,
+            blackModel: this.config.blackModel
         };
     }
 
@@ -50,11 +52,15 @@ class GameLoop {
         if (this.active) return;
         this.config = config;
         this.active = true;
-        this.logs = [];
-        this.addLog('info', 'Game Started', config);
+        this.setupNewGame();
+    }
+
+    setupNewGame() {
+        this.logs = []; // Optional: keep logs or clear. User implies continuous play.
+        // Let's clear logs but keep the stats.
+        this.addLog('info', 'Starting new game...', this.config);
 
         this.chess = new Chess();
-
         this.broadcast();
         this.runTurn();
     }
@@ -73,8 +79,11 @@ class GameLoop {
             this.handleGameOver();
             this.timeout = setTimeout(() => {
                 if (!this.active) return;
-                this.start(this.config);
-            }, 5000);
+                this.addLog('info', 'Auto-restarting in 2s...');
+                setTimeout(() => {
+                    if (this.active) this.setupNewGame();
+                }, 2000);
+            }, 1000);
             return;
         }
 
@@ -92,18 +101,24 @@ class GameLoop {
             return moves[Math.floor(Math.random() * moves.length)];
         };
 
-        const maxAttempts = 3;
         let movePlayed = false;
+        let attempt = 0;
 
-        for (let i = 0; i < maxAttempts; i++) {
-            if (!this.active) break;
+        // RETRY LOOP: Keep trying until the LLM provides a valid move.
+        // We disabled random fallback per user request.
+        while (!movePlayed && this.active) {
+            attempt++;
 
-            const { move: moveSan, raw } = await this.ollama.generateMove(
+            // Add a small delay for retries to avoid hammering the server in a tight loop if it fails fast
+            if (attempt > 1) await new Promise(resolve => setTimeout(resolve, 500));
+
+            const { move: moveSan, raw, thought } = await this.ollama.generateMove(
                 model,
                 this.chess.fen(),
                 this.chess.pgn(),
                 colorName,
-                validMovesStr // Pass valid moves to Ollama Client
+                validMovesStr, // Pass valid moves to Ollama Client
+                attempt // Pass attempt count for adaptive prompting
             );
 
             if (moveSan) {
@@ -112,27 +127,24 @@ class GameLoop {
                     if (result) {
                         movePlayed = true;
                         const newFen = this.chess.fen();
-                        this.addLog('move', `${colorName} plays ${moveSan}`, { raw, model, fen: newFen });
-                        this.addLog('info', `FEN DEBUG: ${newFen}`); // Explicit debug log
+                        this.addLog('move', `${model} (${colorName}) plays ${moveSan}`, { raw, model, fen: newFen, thought });
+                        //this.addLog('info', `FEN DEBUG: ${newFen}`); // Explicit debug log
                         console.log(`${colorName} played: ${moveSan}`);
                         console.log(`FEN AFTER: ${newFen}`);
                         break;
                     }
                 } catch (e) {
-                    this.addLog('error', `Invalid Move: ${moveSan}`, { raw, attempt: i + 1 });
-                    console.warn(`Invalid move from ${model}: "${moveSan}"`);
+                    this.addLog('error', `Invalid Move from ${model}: ${moveSan}`, { raw, attempt });
+                    console.warn(`Invalid move from ${model} (Attempt ${attempt}): "${moveSan}"`);
                 }
             } else {
-                this.addLog('error', `Failed to generate move`, { raw, attempt: i + 1 });
+                this.addLog('error', `Failed to generate move from ${model}`, { raw, attempt });
+                console.warn(`Failed to generate move from ${model} (Attempt ${attempt}). Raw: ${raw}`);
             }
         }
 
-        if (!movePlayed && this.active) {
-            console.error(`${colorName} failed. Random move.`);
-            const randMove = getRandomMove();
-            this.chess.move(randMove);
-            this.addLog('info', `${colorName} fallback to Random: ${randMove}`);
-        }
+        // Fallback logic REMOVED. 
+        // If the loop exits without a move, it's because this.active became false (game stopped).
 
         this.broadcast();
 
@@ -149,10 +161,15 @@ class GameLoop {
             if (winner === 'White') this.gameStats.whiteWins++;
             else this.gameStats.blackWins++;
         } else if (this.chess.isDraw()) {
-            result = 'Draw';
+            if (this.chess.isStalemate()) result = 'Draw (Stalemate)';
+            else if (this.chess.isThreefoldRepetition()) result = 'Draw (Threefold Repetition)';
+            else if (this.chess.isInsufficientMaterial()) result = 'Draw (Insufficient Material)';
+            else if (this.chess.isDrawByFiftyMoves && this.chess.isDrawByFiftyMoves()) result = 'Draw (50-Move Rule)';
+            else result = 'Draw';
+
             this.gameStats.draws++;
         } else {
-            result = 'Game Over';
+            result = "Game Over";
         }
 
         this.addLog('info', `Game Over: ${result}`);
